@@ -38,6 +38,12 @@ pygame.mixer.music.play(-1)  # Loop the music indefinitely
 volume = 0.5
 pygame.mixer.music.set_volume(volume)
 
+# High score tracking
+high_score = 0
+
+# Font for score display
+font = pygame.font.Font(None, 36)
+
 # Game state
 paused = False
 
@@ -50,8 +56,19 @@ def get_random_food():
     color = get_random_color()
     return (x, y, color)
 
+def update_high_score(score):
+    global high_score
+    if score > high_score:
+        high_score = score
+
+def draw_score(score):
+    score_text = font.render(f"Score: {score}", True, WHITE)
+    high_score_text = font.render(f"High Score: {high_score}", True, WHITE)
+    screen.blit(score_text, (10, 10))
+    screen.blit(high_score_text, (10, 50))
+
 def main():
-    global current_background, paused, volume
+    global current_background, paused, volume, high_score
     
     snake = [(CELL_COUNT // 2, CELL_COUNT // 2),
              (CELL_COUNT // 2 - 1, CELL_COUNT // 2),
@@ -60,9 +77,14 @@ def main():
     snake_color = GREEN
     food = get_random_food()
     running = True
-    
+    score = 0
+    speed = 0.4  # Initial snake speed
+    max_speed = 2.0
+    speed_increase_factor = 1.05
+
     while running:
-        clock.tick(10)  # Adjust frame rate
+        # Cap the frame rate and adjust based on speed
+        clock.tick(speed * 10)  
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -98,12 +120,16 @@ def main():
         
         if (new_x < 0 or new_x >= CELL_COUNT or new_y < 0 or new_y >= CELL_COUNT) or new_head in snake:
             running = False
+            update_high_score(score)
         
         snake.insert(0, new_head)
         
         if new_head == (food[0], food[1]):
             snake_color = food[2]
             food = get_random_food()
+            score += 1
+            # Increase speed, but cap at max_speed
+            speed = min(max_speed, speed * speed_increase_factor)
         else:
             snake.pop()
         
@@ -113,6 +139,8 @@ def main():
         for x, y in snake:
             pygame.draw.rect(screen, snake_color, (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE))
         pygame.draw.rect(screen, food[2], (food[0] * CELL_SIZE, food[1] * CELL_SIZE, CELL_SIZE, CELL_SIZE))
+        
+        draw_score(score)
         
         pygame.display.flip()
     
